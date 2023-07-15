@@ -1,36 +1,44 @@
-import { Body, Controller, Get, Param, Post, Put, Query, Request, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe, ParseIntPipe, ParseArrayPipe, Delete, HttpStatus, NotFoundException, Session } from "@nestjs/common";
-import {  EventService } from "./event.service";
-import { EventDTO, AdminUpdateDTO, EventLoginDTO, AdminLoginfromDTO } from "./event.dto";
+import { Body, Controller, Get, Param, Post, Put, Query, Request, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe, ParseIntPipe, ParseArrayPipe, Delete, HttpStatus, NotFoundException, Session, UseGuards } from "@nestjs/common";
+import { EventService } from "./event.service";
+import { EventDTO, EventUpdateDTO, EventLoginDTO, EventLoginfromDTO, EventsDTO } from "./event.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MulterError, diskStorage } from "multer";
 import { EventOrganizerEntity } from "./eventorganizer.entity";
 import { EventSecretEntity } from "src/eventsecret/eventsecret.entity";
+import { SessionGuard } from "./session.guard";
+import { CreateEventsEntity } from "./eventcreate.entity";
 
 
 @Controller('event')
-export class EventController{
+export class EventController {
 
-    constructor(private readonly eventService: EventService){}
-
-
+    constructor(private readonly eventService: EventService) { }
 
 
 
-// // add event organizer
-//  @Post('/addeventorganizer')  
-//     create(@Body() eventorganizer) {
-//         // console.log(admin);
-//         return this.adminService.create(eventorganizer);
-//     }
+
+
+   
     // add event secret
-      @Post('/addeventsecret')
+
+    @Post('/addeventsecret')
     addeventsecret(@Body() eventsecret) {
         console.log(eventsecret);
         return this.eventService.addeventsecret(eventsecret);
     }
+    // create events
+    @Post('/createevents')
+    createevents(@Body() createevents) {
+        console.log(createevents);
+        return this.eventService.createevents(createevents);
+    }
 
-// search for the event
- @Get('/eventorgaizersearch/:id') 
+
+    // search for the event organizer
+
+    @Get('/eventorgaizersearch/:id')
+    @UseGuards(SessionGuard)
+
     async getEventById(@Param('id', ParseIntPipe) id: number): Promise<EventOrganizerEntity> {
 
         const res = await this.eventService.getEventById(id)
@@ -41,15 +49,35 @@ export class EventController{
         else {
             throw new NotFoundException({
                 status: HttpStatus.NOT_FOUND,
-                message: "Event not found"
+                message: "Event organizer not found"
             });
         }
     }
-// search for the event by id and name 
-    @Get('/eventorgaizersearch/:id/name') 
-    async getEventbyIDAndName(@Param('id', ParseIntPipe) @Param('name', ParseIntPipe) id: number, name:any): Promise<EventOrganizerEntity> {
+     // search for the event 
+    @Get('/eventsearch/:id')
+    async getEventSearchById(@Param('id', ParseIntPipe) id: number): Promise<CreateEventsEntity> {
 
-        const res = await this.eventService.getEventbyIDAndName(id,name)
+        const res = await this.eventService.getEventSearchById(id)
+        if (res !== null) {
+            console.log(res);
+            return res;
+        }
+        else {
+            throw new NotFoundException({
+                status: HttpStatus.NOT_FOUND,
+                message: "Event organizer not found"
+            });
+        }
+    }
+
+
+
+
+    // search for the event by id and name 
+    @Get('/eventorgaizersearch/:id/name')
+    async getEventbyIDAndName(@Param('id', ParseIntPipe) @Param('name', ParseIntPipe) id: number, name: any): Promise<EventOrganizerEntity> {
+
+        const res = await this.eventService.getEventbyIDAndName(id, name)
         if (res !== null) {
             console.log(res);
             return res;
@@ -61,189 +89,126 @@ export class EventController{
             });
         }
     }
-//shows all events in database
-     @Get('/getallevents') 
-    async getAllEvents(): Promise<EventOrganizerEntity[]> {
-      return this.eventService.getAllEvents(); 
+    //shows all events organization in database
+    @Get('/getalleventorganization')
+    async getAllEventsOrganization(): Promise<EventOrganizerEntity[]> {
+        return this.eventService.getAllEventsOrganization();
     }
+      //shows all events in database
+      @Get('/getallevents')
+      async getAllEvents(): Promise<CreateEventsEntity[]> {
+          return this.eventService.getAllEvents();
+      }
 
-//file uploads
-@Post('/addeventsphoto')
+    //file uploads
+    @Post('/signup')
 
     @UseInterceptors(FileInterceptor('photo',
 
-        { fileFilter: (req, file, cb) => {
+        {
+            fileFilter: (req, file, cb) => {
 
-        if (file.originalname.match(/^.*\.(jpg|webp|png|jpeg)$/))
+                if (file.originalname.match(/^.*\.(jpg|webp|png|jpeg)$/))
 
-        cb(null, true);
+                    cb(null, true);
 
-        else {
+                else {
 
-        cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+                    cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
 
-        }
+                }
 
-        },
+            },
 
-        limits: { fileSize: 300000 },
+            limits: { fileSize: 300000 },
 
-        storage:diskStorage({
+            storage: diskStorage({
 
-        destination: './uploads',
+                destination: './uploads',
 
-        filename: function (req, file, cb) {
+                filename: function (req, file, cb) {
 
-        cb(null,Date.now()+file.originalname)
+                    cb(null, Date.now() + file.originalname)
 
-        },
+                },
 
-        })
+            })
 
         }))
 
     @UsePipes(new ValidationPipe())
 
-    async addeventsphoto(@Body() events:EventOrganizerEntity,@UploadedFile() photo: Express.Multer.File):Promise<EventOrganizerEntity>{
+    async addeventsphoto(@Body() events: EventOrganizerEntity, @UploadedFile() photo: Express.Multer.File): Promise<EventOrganizerEntity> {
 
-        events.photo=photo.filename
+        events.photo = photo.filename
 
         return this.eventService.create(events)
 
     }
 
-//view the uploaded photos
+    //view the uploaded photos
     @Get('/getphoto/:name')
-getbyphotos(@Param('name') name, @Res() res) {
- res.sendFile(name,{ root: './uploads' })
- }
+    getbyphotos(@Param('name') name, @Res() res) {
+        res.sendFile(name, { root: './uploads' })
+    }
 
- @UsePipes(new ValidationPipe)
- signup(@Body() mydata: EventDTO, @UploadedFile() photo: Express.Multer.File) {
-     console.log(mydata);
-     console.log(photo.filename);
-     mydata.photo = photo.filename;
-     return this.eventService.signup(mydata);
+    // update
+    @Put('/updateevent')
+    @UseGuards(SessionGuard)
+    //@UsePipes(new ValidationPipe())
+    updateevent(@Body() data: EventUpdateDTO, @Session() session): object {
+        console.log(session.username);
+        return this.eventService.updateevent(session.username, data);
+    }
+    @Put('/updateuserevent/:id')
+    @UsePipes(new ValidationPipe())
+    updateEventById(@Param("id",ParseIntPipe) id: number, @Body() data: EventLoginDTO): object {
+        return this.eventService.updateEventById(id, data);
+    }
+    //update to events;
+    @Put('/updateevent/:id')
+    @UsePipes(new ValidationPipe())
+    updatecreateEventById(@Param() id: number, @Body() data: EventsDTO): object {
+        return this.eventService.updatecreateEventById(id, data);
+    }
 
- }
+  
+    @UsePipes(new ValidationPipe)
+    signup(@Body() mydata: EventDTO, @UploadedFile() photo: Express.Multer.File) {
+        console.log(mydata);
+        console.log(photo.filename);
+        mydata.photo = photo.filename;
+        return this.eventService.signup(mydata);
 
- @Post('/signin')
- signIn(@Body() data: EventDTO, @Session() session) {
+    }
+ 
 
-     if (this.eventService.signIn(data)) {
-         session.username = data.username;
-         return true;
-     }
-     else {
+    @Post('/signin')
+    signIn(@Body() data: EventDTO, @Session() session) {
+        session.username = data.username;
+        if (this.eventService.signIn(data)) {
+            // session.username = data.username;
+            return true;
+        }
+        else {
 
-         return false;
-     }
-     // return this.adminService.signIn(data);
- }
- // delete
-     @Delete('/eventdelete/:id')
-  async deleteUser(@Param('id') id: number): Promise<EventOrganizerEntity[]> {
-   return this.eventService.deleteUser(id); 
-    // return this.adminService.getAlladmins();
-  }
+            return false;
+        }
+        
 
-
-// ------------------------------------------------------------------------------------------
-    // @Get('/adminsearch/:id') // search for the admin
-    // async getAdminById(@Param('id', ParseIntPipe) id: number): Promise<adminEntity> {
-
-    //     const res = await this.adminService.getAdminById(id)
-    //     if (res !== null) {
-    //         console.log(res);
-    //         return res;
-    //     }
-    //     else {
-    //         throw new NotFoundException({
-    //             status: HttpStatus.NOT_FOUND,
-    //             message: "Admin not found"
-    //         });
-    //     }
-    // }
-    // @Get('/managersearch/:id')  //search for the manager
-    // async getsearchmanagerById(@Param('id', ParseIntPipe) id: number): Promise<ManagerEntity> {
-
-    //     const res = await this.adminService.getsearchmanagerById(id)
-    //     if (res !== null) {
-    //         console.log(res);
-    //         return res;
-    //     }
-    //     else {
-    //         throw new NotFoundException({
-    //             status: HttpStatus.NOT_FOUND,
-    //             message: "Manager not found"
-    //         });
-    //     }
-    // }
-
-
-    // @Post('/addadmin')
-    // create(@Body() admin) {
-    //     // console.log(admin);
-    //     return this.adminService.create(admin);
-    // }
-
-
-
-    // @Post('/addmanager')
-    // addManagers(@Body() manager) {
-    //     console.log(manager);
-    //     return this.adminService.addManager(manager);
-    // }
-
-    // @Get('/getmanager/:adminid') //not working
-    // getManagers(@Param('adminid', ParseIntPipe) adminid: number) {
-
-    //     return this.adminService.getManager(adminid);
-    // }
-
-    // @Get('/getallthemanager') //shows all managers in database
-    // async getAllManagers(): Promise<ManagerEntity[]> {
-    //   return this.adminService.getAllManagers(); // 
-    // }
-
-
-//     @Delete('/admindel/:id') //delete the admin 
-//   async deleteUser(@Param('id') id: number): Promise<adminEntity[]> {
-//    return this.adminService.deleteUser(id); 
-//     // return this.adminService.getAlladmins();
-//   }
-   
-
-
-
-
-
-
-  // -----------------------------------------old code below---------------------------------------------------------//
-    // @Get('/index')
-    // getIndex(): any {
-    // return this.adminService.getIndex();
-    // }
-
-//     @Post('/login')
-// @UsePipes(new ValidationPipe ())
-// login(@Body() fromdata:AdminLoginDTO):string{
-//     return this.adminService.login(fromdata)
-// }
-
-
-
-// @Get('/search/:id')
-// getAdminById(@Param() data:AdminDTO): any {
-// return this.adminService.getAdminById(data);
-// }
-
-// @Delete('/delete/:id')
-// getAdminByDelete(@Param('id',ParseIntPipe) id:number):string{
-//     return this.adminService.getAdminByDelete(id);
-// }
-
-
+    }
+    // delete
+    @Delete('/eventorganizationdelete/:id')
+    async deleteorganization(@Param('id') id: number): Promise<EventOrganizerEntity[]> {
+        return this.eventService.deleteorganization(id);
+        // return this.adminService.getAlladmins();
+    }
+      // delete
+      @Delete('/eventdelete/:id')
+      async deleteEvents(@Param('id') id: number): Promise<EventOrganizerEntity[]> {
+          return this.eventService.deleteEvents(id);
+          // return this.adminService.getAlladmins();
+      }
 
 
 }

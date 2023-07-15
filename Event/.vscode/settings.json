@@ -1,9 +1,12 @@
 {
     "cSpell.words": [
+        "createevents",
         "dateofbirth",
+        "eventcreate",
         "eventorgaizersearch",
         "eventorganizer",
         "eventsecret",
-        "getadminfrom"
+        "getadminfrom",
+        "typeorm"
     ]
 }

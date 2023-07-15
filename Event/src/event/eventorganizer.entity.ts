@@ -1,6 +1,7 @@
 
 import { EventSecretEntity } from "src/eventsecret/eventsecret.entity";
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { CreateEventsEntity } from "./eventcreate.entity";
 
 
 
@@ -31,29 +32,14 @@ export class EventOrganizerEntity{
     @JoinColumn()
     eventsecret: EventSecretEntity;
    
+
+
+    @OneToMany(() => CreateEventsEntity, create => create.createevents, { cascade: true })
+creates: CreateEventsEntity[];
+
+
+
 }
    
 
  
-@Entity('createevents')
-export class CreateEventsEntity{
-@PrimaryGeneratedColumn()
-    id:number;
-    @Column()
-    name:string;
-    @Column()
-    location:string;
-    @Column()
-    time:string;
-    @Column()
-    ticketprice:string;
-    @Column()
-    availability:string;
-    @Column()
-    address:string;
-    @Column()
-    type:string;
-    @Column()
-    description:string;
-}
-

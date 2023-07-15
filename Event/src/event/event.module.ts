@@ -2,13 +2,14 @@ import { Module } from "@nestjs/common";
 import { EventController } from "./event.controller";
 import { EventService } from "./event.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { CreateEventsEntity, EventOrganizerEntity } from "./eventorganizer.entity";
+import {  EventOrganizerEntity } from "./eventorganizer.entity";
 import { EventSecretEntity} from "src/eventsecret/eventsecret.entity";
+import { CreateEventsEntity } from "./eventcreate.entity";
 
 
 
 @Module({
-    // imports: [TypeOrmModule.forFeature([adminEntity,ManagerEntity]),],  EventOrganizerEntity
+   
     imports: [TypeOrmModule.forFeature([EventOrganizerEntity,EventSecretEntity,CreateEventsEntity]),],
     controllers: [EventController],
     providers: [EventService],
